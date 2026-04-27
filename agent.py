@@ -7,6 +7,14 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
+from typing import TypedDict, List
+from langchain_core.messages import BaseMessage
+from langgraph.graph import StateGraph, END
+
+class MessagesState(TypedDict):
+    messages: List[BaseMessage]
+
+
 MODEL_NAME = 'gpt-4.1-nano'
 #os.environ['OPENAI_API_KEY'] = 'api key'
 
@@ -69,6 +77,96 @@ class ToolTracer:
 # TASK 1. ReAct loop agent
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+def is_on_topic(user_message: str) -> bool:
+    """Use LLM to classify whether the message is relevant to coding framework."""
+    response = llm.invoke([
+        SystemMessage(content=(
+            "You are a strict binary classifier.\n"
+            "Your task is to decide whether a user message is related to coding.\n\n"
+
+            "Coding includes ONLY:\n"
+            "- Writing or understanding source code\n"
+            "- Programming concepts (algorithms, data structures)\n"
+            "- Software development (backend, frontend, APIs, databases)\n"
+            "- Debugging, errors, or technical issues\n"
+            "- Development tools, environments, or frameworks\n\n"
+
+            "NOT coding:\n"
+            "- General questions\n"
+            "- Casual conversation\n"
+            "- Non-technical topics\n"
+            "- Ambiguous or unclear intent\n\n"
+
+            "Rules:\n"
+            "- Respond with ONLY one word: yes OR no\n"
+            "- Do NOT explain\n"
+            "- Do NOT add punctuation\n"
+            "- Do NOT add extra text\n"
+            "- If unsure, respond 'no'\n\n"
+
+            "Answer strictly based on the user message."
+        )),
+        HumanMessage(content=user_message),
+    ])
+    answer = response.content.strip().lower()
+    print(f"[GUARD] is_on_topic → {answer}")
+    return answer.startswith("yes")
+
+
+def input_guard(state: MessagesState) -> MessagesState:
+    messages = state["messages"]
+    last_msg = messages[-1]
+    content = last_msg.content
+
+    has_history = len(messages) > 1
+    if has_history and not is_on_topic(content):
+        print("[GUARD] 🚫 Blocked")
+        return {
+            "messages": messages + [
+                AIMessage(content="I'm a coding framework. I only help with programming.")
+            ]
+        }
+
+    return state
+
+def agent_node(state: MessagesState) -> MessagesState:
+    messages = state["messages"]
+
+    response = llm.invoke(messages)
+
+    return {
+        "messages": messages + [response]
+    }
+
+def guard_router(state: MessagesState) -> str:
+    last_msg = state["messages"][-1].content
+
+    if "only help with programming" in last_msg:
+        return "end"
+
+    return "agent"
+
+
+builder = StateGraph(MessagesState)
+
+builder.add_node("guard", input_guard)
+builder.add_node("agent", agent_node)
+
+builder.set_entry_point("guard")
+
+builder.add_conditional_edges(
+    "guard",
+    guard_router,
+    {
+        "agent": "agent",
+        "end": END
+    }
+)
+
+builder.add_edge("agent", END)
+
+graph = builder.compile()
+
 SYSTEM_PROMPT = """
 You are an AI coding assistant inside a development framework.
 Your goal is to help the user with programming, debugging, and system design.
@@ -76,10 +174,11 @@ Be concise and practical.
 """
 
 def run_agent():
-    messages = [SystemMessage(content=SYSTEM_PROMPT)]
-    tracer = ToolTracer()
-
     print("\nType 'exit' to quit.\n")
+
+    state = {
+        "messages": [SystemMessage(content=SYSTEM_PROMPT)]
+    }
 
     while True:
         user_input = input("You: ")
@@ -88,17 +187,13 @@ def run_agent():
             print("Bye bro 👋")
             break
 
-        # Add user message
-        messages.append(HumanMessage(content=user_input))
+        state["messages"].append(HumanMessage(content=user_input))
 
-        # Call LLM
-        response = llm_chat(messages)
+        result = graph.invoke(state)
 
-        # Save response
-        messages.append(response)
+        state = result  # update state
 
-        # Print result
-        print(f"AI: {response.content}")
+        print(f"AI: {state['messages'][-1].content}")
 
 if __name__ == "__main__":
     run_agent()
