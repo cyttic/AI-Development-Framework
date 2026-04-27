@@ -1,15 +1,11 @@
-import os
-import json
-import time
-import copy
-from typing import List, Literal
-from pydantic import BaseModel, Field
-from dataclasses import dataclass
+import os, json, copy
+from typing import Any
+from pathlib import Path
+from dataclasses import dataclass, field
+
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langchain_core.tools import tool
-from langgraph.graph import StateGraph, MessagesState, START, END
-from langgraph.prebuilt import ToolNode
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
+from langchain_core.utils.function_calling import convert_to_openai_tool
 
 MODEL_NAME = 'gpt-4.1-nano'
 #os.environ['OPENAI_API_KEY'] = 'api key'
@@ -72,3 +68,37 @@ class ToolTracer:
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # TASK 1. ReAct loop agent
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SYSTEM_PROMPT = """
+You are an AI coding assistant inside a development framework.
+Your goal is to help the user with programming, debugging, and system design.
+Be concise and practical.
+"""
+
+def run_agent():
+    messages = [SystemMessage(content=SYSTEM_PROMPT)]
+    tracer = ToolTracer()
+
+    print("\nType 'exit' to quit.\n")
+
+    while True:
+        user_input = input("You: ")
+
+        if user_input.lower() in ["exit", "quit"]:
+            print("Bye bro 👋")
+            break
+
+        # Add user message
+        messages.append(HumanMessage(content=user_input))
+
+        # Call LLM
+        response = llm_chat(messages)
+
+        # Save response
+        messages.append(response)
+
+        # Print result
+        print(f"AI: {response.content}")
+
+if __name__ == "__main__":
+    run_agent()
