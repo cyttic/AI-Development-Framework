@@ -218,5 +218,13 @@ def run_agent_once(user_input: str, history: list[str] | None = None) -> str:
 
     return result["messages"][-1].content
 
-if __name__ == "__main__":
-    run_agent()
+def handle_user_input(user_input: str, state: dict):
+
+    if "messages" not in state:
+        state["messages"] = [SystemMessage(content=SYSTEM_PROMPT)]
+
+    state["messages"].append(HumanMessage(content=user_input))
+
+    result = graph.invoke(state)
+
+    return result["messages"][-1].content, result
