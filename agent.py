@@ -195,5 +195,24 @@ def run_agent():
 
         print(f"AI: {state['messages'][-1].content}")
 
+
+
+def run_agent_once(user_input: str, history: list[str] | None = None) -> str:
+    if history is None:
+        history = []
+
+    messages = [SystemMessage(content=SYSTEM_PROMPT)]
+
+    for msg in history:
+        messages.append(HumanMessage(content=msg))
+
+    messages.append(HumanMessage(content=user_input))
+
+    state = {"messages": messages}
+
+    result = graph.invoke(state)
+
+    return result["messages"][-1].content
+
 if __name__ == "__main__":
     run_agent()
