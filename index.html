@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Agent</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 700px;
+            margin: 40px auto;
+        }
+        #chat {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+        }
+        .user { color: blue; }
+        .ai { color: green; }
+    </style>
+</head>
+<body>
+
+<h2>AI Coding Assistant</h2>
+
+<div id="chat"></div>
+
+<input id="input" type="text" placeholder="Type your message..." style="width:80%">
+<button onclick="sendMessage()">Send</button>
+
+<script>
+let history = [];
+
+async function sendMessage() {
+    const input = document.getElementById("input");
+    const chat = document.getElementById("chat");
+
+    const message = input.value;
+    if (!message) return;
+
+    chat.innerHTML += `<div class="user"><b>You:</b> ${message}</div>`;
+
+    const response = await fetch("http://127.0.0.1:8000/chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            message: message,
+            history: history
+        })
+    });
+
+    const data = await response.json();
+
+    chat.innerHTML += `<div class="ai"><b>AI:</b> ${data.reply}</div>`;
+
+    history.push(message);
+    input.value = "";
+    chat.scrollTop = chat.scrollHeight;
+}
+</script>
+
+</body>
+</html>
