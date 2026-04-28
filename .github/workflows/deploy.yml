@@ -44,3 +44,4 @@ steps:
         --resource-group $RESOURCE_GROUP \
         --docker-custom-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:latest \
         --docker-registry-server-url https://$ACR_NAME.azurecr.io
+
