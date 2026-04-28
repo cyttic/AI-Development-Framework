@@ -1,23 +1,105 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI Agent</title>
-    <style>
-        body {
-            font-family: Arial;
-            max-width: 700px;
-            margin: 40px auto;
-        }
-        #chat {
-            border: 1px solid #ccc;
-            padding: 10px;
-            height: 400px;
-            overflow-y: auto;
-        }
-        .user { color: blue; }
-        .ai { color: green; }
-    </style>
+    <title>AI Coding Assistant</title>
+
+```
+<!-- Markdown parser -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<!-- Code highlighting -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        max-width: 800px;
+        margin: 40px auto;
+    }
+
+    h2 {
+        text-align: center;
+    }
+
+    #chat {
+        border: 1px solid #334155;
+        background: #020617;
+        padding: 15px;
+        height: 500px;
+        overflow-y: auto;
+        border-radius: 10px;
+    }
+
+    .message {
+        margin-bottom: 15px;
+    }
+
+    .user {
+        text-align: right;
+    }
+
+    .user .bubble {
+        background: #2563eb;
+        color: white;
+        display: inline-block;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 70%;
+    }
+
+    .ai .bubble {
+        background: #1e293b;
+        display: inline-block;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 70%;
+    }
+
+    #input-area {
+        margin-top: 10px;
+        display: flex;
+    }
+
+    #input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        outline: none;
+    }
+
+    button {
+        margin-left: 10px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        background: #22c55e;
+        color: white;
+        cursor: pointer;
+    }
+
+    button:hover {
+        background: #16a34a;
+    }
+
+    pre {
+        background: #020617;
+        padding: 10px;
+        border-radius: 8px;
+        overflow-x: auto;
+    }
+
+    code {
+        font-family: monospace;
+    }
+</style>
+```
+
 </head>
 <body>
 
@@ -25,8 +107,10 @@
 
 <div id="chat"></div>
 
-<input id="input" type="text" placeholder="Type your message..." style="width:80%">
-<button onclick="sendMessage()">Send</button>
+<div id="input-area">
+    <input id="input" type="text" placeholder="Ask something about coding..." />
+    <button onclick="sendMessage()">Send</button>
+</div>
 
 <script>
 let history = [];
@@ -35,11 +119,18 @@ async function sendMessage() {
     const input = document.getElementById("input");
     const chat = document.getElementById("chat");
 
-    const message = input.value;
+    const message = input.value.trim();
     if (!message) return;
 
-    chat.innerHTML += `<div class="user"><b>You:</b> ${message}</div>`;
+    // Add user message
+    const userDiv = document.createElement("div");
+    userDiv.className = "message user";
+    userDiv.innerHTML = `<div class="bubble">${message}</div>`;
+    chat.appendChild(userDiv);
 
+    input.value = "";
+
+    // Send request
     const response = await fetch("http://127.0.0.1:8000/chat", {
         method: "POST",
         headers: {
@@ -53,12 +144,33 @@ async function sendMessage() {
 
     const data = await response.json();
 
-    chat.innerHTML += `<div class="ai"><b>AI:</b> ${data.reply}</div>`;
+    // Add AI message (render Markdown)
+    const aiDiv = document.createElement("div");
+    aiDiv.className = "message ai";
 
+    const html = marked.parse(data.reply);
+
+    aiDiv.innerHTML = `<div class="bubble">${html}</div>`;
+    chat.appendChild(aiDiv);
+
+    // Highlight code
+    document.querySelectorAll('pre code').forEach((block) => {
+        hljs.highlightElement(block);
+    });
+
+    // Update history (basic version)
     history.push(message);
-    input.value = "";
+
+    // Scroll down
     chat.scrollTop = chat.scrollHeight;
 }
+
+// Enter to send
+document.getElementById("input").addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        sendMessage();
+    }
+});
 </script>
 
 </body>
