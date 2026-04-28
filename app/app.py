@@ -11,6 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 #from agent import handle_user_input, SYSTEM_PROMPT
 from langchain_core.messages import SystemMessage
 
+import os
+
+port = int(os.environ.get("PORT", 8000))
+
 app = FastAPI()
 
 app.add_middleware(
