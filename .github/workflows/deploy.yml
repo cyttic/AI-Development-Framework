@@ -6,10 +6,10 @@ on:
       - main
 
 env:
-  ACR_NAME: myregistry123
+  ACR_NAME: myaiacr2026cyttic
   IMAGE_NAME: myimage
-  WEBAPP_NAME: my-ai-app-123
-  RESOURCE_GROUP: myResourceGroup
+  WEBAPP_NAME: AIDevelopmentFramework
+  RESOURCE_GROUP: group1
 
 jobs:
   build-and-deploy:
