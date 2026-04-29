@@ -38,11 +38,11 @@ jobs:
           script: |
             docker pull $IMAGE_NAME:latest
 
-            docker stop myapp || true
-            docker rm myapp || true
+            docker stop ai-develompent-framework || true
+            docker rm ai-develompent-framework || true
 
             docker run -d \
               --restart unless-stopped \
               -p 80:8000 \
-              --name myapp \
+              --name ai-develompent-framework \
               $IMAGE_NAME:latest
