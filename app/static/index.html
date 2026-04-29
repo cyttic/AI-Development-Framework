@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>AI Coding Assistant</title>
+<meta charset="UTF-8">
+<title>SCE AI Coding Framework</title>
 
-```
 <!-- Markdown parser -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -15,24 +13,50 @@
 
 <style>
     body {
-        font-family: Arial, sans-serif;
-        background: #0f172a;
+        font-family: "Fira Code", Consolas, monospace;
+        background: #0b1020;
         color: #e2e8f0;
-        max-width: 800px;
-        margin: 40px auto;
+        max-width: 900px;
+        margin: 30px auto;
     }
 
-    h2 {
+    /* HEADER */
+    .header {
         text-align: center;
+        margin-bottom: 20px;
     }
 
+    .title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #60a5fa;
+    }
+
+    .subtitle {
+        font-size: 13px;
+        color: #94a3b8;
+        margin-top: 5px;
+    }
+
+    .badge {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 4px 10px;
+        font-size: 12px;
+        border-radius: 6px;
+        background: #1e293b;
+        color: #22c55e;
+    }
+
+    /* CHAT */
     #chat {
-        border: 1px solid #334155;
+        border: 1px solid #1e293b;
         background: #020617;
         padding: 15px;
-        height: 500px;
+        height: 520px;
         overflow-y: auto;
-        border-radius: 10px;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.4);
     }
 
     .message {
@@ -49,37 +73,44 @@
         display: inline-block;
         padding: 10px;
         border-radius: 10px;
-        max-width: 70%;
+        max-width: 75%;
+        font-family: monospace;
     }
 
     .ai .bubble {
-        background: #1e293b;
+        background: #111827;
+        border: 1px solid #1f2937;
         display: inline-block;
         padding: 10px;
         border-radius: 10px;
-        max-width: 70%;
+        max-width: 75%;
     }
 
+    /* INPUT */
     #input-area {
-        margin-top: 10px;
+        margin-top: 12px;
         display: flex;
     }
 
     #input {
         flex: 1;
-        padding: 10px;
+        padding: 12px;
         border-radius: 8px;
-        border: none;
+        border: 1px solid #1f2937;
+        background: #0b1220;
+        color: white;
         outline: none;
+        font-family: monospace;
     }
 
     button {
         margin-left: 10px;
-        padding: 10px 20px;
+        padding: 10px 18px;
         border: none;
         border-radius: 8px;
         background: #22c55e;
-        color: white;
+        color: black;
+        font-weight: bold;
         cursor: pointer;
     }
 
@@ -88,28 +119,47 @@
     }
 
     pre {
-        background: #020617;
+        background: #0b1220;
         padding: 10px;
         border-radius: 8px;
         overflow-x: auto;
+        border: 1px solid #1f2937;
     }
 
     code {
-        font-family: monospace;
+        font-family: "Fira Code", monospace;
+    }
+
+    /* FOOTER */
+    .footer {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 12px;
+        color: #64748b;
     }
 </style>
-```
-
 </head>
+
 <body>
 
-<h2>AI Coding Assistant</h2>
+<div class="header">
+    <div class="title">SCE AI Coding Framework</div>
+    <div class="subtitle">
+        Final Project — Software Engineering College (SCE)<br>
+        AI-powered development assistant based on GPT-4.1
+    </div>
+    <div class="badge">CODING-ONLY MODE • NO GENERAL CHAT</div>
+</div>
 
 <div id="chat"></div>
 
 <div id="input-area">
-    <input id="input" type="text" placeholder="Ask something about coding..." />
-    <button onclick="sendMessage()">Send</button>
+    <input id="input" type="text" placeholder="> ask coding question..." />
+    <button onclick="sendMessage()">RUN</button>
+</div>
+
+<div class="footer">
+    Built for educational purposes • AI Development Framework • v1.0
 </div>
 
 <script>
@@ -122,55 +172,48 @@ async function sendMessage() {
     const message = input.value.trim();
     if (!message) return;
 
-    // Add user message
+    // USER MESSAGE
     const userDiv = document.createElement("div");
     userDiv.className = "message user";
-    userDiv.innerHTML = `<div class="bubble">${message}</div>`;
+    userDiv.innerHTML = `<div class="bubble">> ${message}</div>`;
     chat.appendChild(userDiv);
 
     input.value = "";
 
-// Send request
-const response = await fetch("/chat", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-        session_id: "1",
-        message: message
-    })
-});
+    // API CALL
+    const response = await fetch("/chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            session_id: "1",
+            message: message
+        })
+    });
 
-const data = await response.json();
-console.log("SERVER RESPONSE:", data);
+    const data = await response.json();
 
-// Add AI message (render Markdown)
-const aiDiv = document.createElement("div");
-aiDiv.className = "message ai";
+    // AI MESSAGE
+    const aiDiv = document.createElement("div");
+    aiDiv.className = "message ai";
 
-const html = marked.parse(data.response);
+    const html = marked.parse(data.response || "");
 
-aiDiv.innerHTML = `<div class="bubble">${html}</div>`;
-chat.appendChild(aiDiv);
+    aiDiv.innerHTML = `<div class="bubble">${html}</div>`;
+    chat.appendChild(aiDiv);
 
-    // Highlight code
+    // highlight code
     document.querySelectorAll('pre code').forEach((block) => {
         hljs.highlightElement(block);
     });
 
-    // Update history (basic version)
-    history.push(message);
-
-    // Scroll down
     chat.scrollTop = chat.scrollHeight;
 }
 
-// Enter to send
+// Enter key support
 document.getElementById("input").addEventListener("keypress", function(e) {
-    if (e.key === "Enter") {
-        sendMessage();
-    }
+    if (e.key === "Enter") sendMessage();
 });
 </script>
 
