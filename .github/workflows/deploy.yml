@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  IMAGE_NAME: your_dockerhub_username/myapp
+  IMAGE_NAME: cyttic/AIDevelopmentFramework
 
 jobs:
   deploy:
