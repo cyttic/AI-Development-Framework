@@ -13,38 +13,50 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
       # 🔐 Login to Docker Hub
       - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
       # 🐳 Build image
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME:latest .
+        run: |
+          docker build -t $IMAGE_NAME:latest .
 
       # 🚀 Push image
       - name: Push image
-        run: docker push $IMAGE_NAME:latest
+        run: |
+          docker push $IMAGE_NAME:latest
 
-      # 🖥️ Deploy on VM
+      # 🖥️ Deploy on VM via SSH
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
-      with:
-    host: ${{ secrets.VM_HOST }}
-    username: ${{ secrets.VM_USER }}
-    key: ${{ secrets.SSH_PRIVATE_KEY }}
-    script: |
-      IMAGE_NAME=cyttic/ai-develompent-framework
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
 
-      docker pull $IMAGE_NAME:latest
+            IMAGE_NAME=cyttic/ai-develompent-framework
 
-      docker stop ai-develompent-framework || true
-      docker rm ai-develompent-framework || true
+            echo "Pulling latest image..."
+            docker pull $IMAGE_NAME:latest
 
-      docker run -d \
-        --restart unless-stopped \
-        -p 80:8000 \
-        --name ai-develompent-framework \
-        $IMAGE_NAME:latest
+            echo "Stopping old container..."
+            docker stop ai-develompent-framework || true
+
+            echo "Removing old container..."
+            docker rm ai-develompent-framework || true
+
+            echo "Starting new container..."
+            docker run -d \
+              --restart unless-stopped \
+              -p 80:8000 \
+              --name ai-develompent-framework \
+              $IMAGE_NAME:latest
+
+            echo "Deployment finished successfully"
