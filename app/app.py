@@ -11,11 +11,15 @@ from fastapi.middleware.cors import CORSMiddleware
 #from agent import handle_user_input, SYSTEM_PROMPT
 from langchain_core.messages import SystemMessage
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 import os
 
 port = int(os.environ.get("PORT", 8000))
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,7 +39,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 def root():
-    return {"status": "ok"}
+    return FileResponse("app/static/index.html")
 
 @app.post("/chat")
 def chat(req: ChatRequest):
