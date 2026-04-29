@@ -1,4 +1,4 @@
-name: Build and Deploy to Azure
+name: Build and Deploy
 
 on:
   push:
@@ -6,41 +6,43 @@ on:
       - main
 
 env:
-  ACR_NAME: myaiacr2026cyttic
-  IMAGE_NAME: myimage
-  WEBAPP_NAME: AIDevelopmentFramework
-  RESOURCE_GROUP: group1
+  IMAGE_NAME: your_dockerhub_username/myapp
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      # 🔐 Login to Docker Hub
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      - name: Login to ACR
-        run: az acr login --name $ACR_NAME
-
+      # 🐳 Build image
       - name: Build Docker image
-        run: |
-          docker build -t $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} .
-          docker tag $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }} $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+        run: docker build -t $IMAGE_NAME:latest .
 
+      # 🚀 Push image
       - name: Push image
-        run: |
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:${{ github.sha }}
-          docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:latest
+        run: docker push $IMAGE_NAME:latest
 
-      - name: Deploy to Web App
-        run: |
-          az webapp config container set \
-            --name $WEBAPP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --docker-custom-image-name $ACR_NAME.azurecr.io/$IMAGE_NAME:latest \
-            --docker-registry-server-url https://$ACR_NAME.azurecr.io
+      # 🖥️ Deploy on VM
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            docker pull $IMAGE_NAME:latest
+
+            docker stop myapp || true
+            docker rm myapp || true
+
+            docker run -d \
+              --restart unless-stopped \
+              -p 80:8000 \
+              --name myapp \
+              $IMAGE_NAME:latest
